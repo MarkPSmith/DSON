@@ -271,59 +271,6 @@ var
   Builder: IDSONBuilder;
   GUID: TGUID;
 begin
-  {
-   TOddDSONKind = (dkNull, dkByte, dkInt16, dkInt32, dkInt64, dkString, dkSingle, dkDouble, dkExtended, dkChar, dkTrue,
-   dkFalse, dkEnum, dkDateTime, dkArray, dkObject, dkGUID, dkRecord);
-  }
-  (*
-   {
-   "dkGUID": "{11111111-2222-3333-4444-555555555555}",
-   "dkByte": 65,
-   "dkInt16": 16,
-   "dkInt32": 32,
-   "dkInt64": 64,
-   "dkString": "The quick brown fox jumped over the lazy dogs",
-   "dkSingle": 1.1,
-   "dkDouble": 2.2,
-   "dkExtended": 3.3,
-   "dkChar": "Z",
-   "dkTrue": true,
-   "dkFalse": false,
-   "dkDateTime": [ISO time],
-   "dkArrayOfInteger": [
-   1,2,3,4,5
-   ],
-   "dkArrayOfArray": [
-   [1,2,3,4,5],
-   ["red","green","blue"]
-   ],
-   "dkArrayOfObjects": [
-   "object": {
-   "name": "john doe",
-   "age": 34
-   }
-   ],
-   "dkObject": {
-   "widget": {
-   "materials": 125.75,
-   "labor": 180.00
-   }
-   "total": 305.75
-   },
-   "dkArrayOfArrayOfArray": {
-   [
-   [
-   [1,2],
-   [3,4]
-   ],
-   [
-   [5,6],
-   [7,8]
-   ]
-   ]
-   }
-   }
-  *)
   GUID := TGUID.Create('{11111111-2222-3333-4444-555555555555}');
   Builder := DSON.Builder;
   Builder.StartObject;
@@ -365,17 +312,52 @@ begin
 end;
 
 procedure BinaryWriterTests.WritesArrays;
+var
+  Bytes: TBytes;
+  Obj: IDSONObject;
 begin
   {
-  dmStartObject   1
-    dmStartPair   1
-      Name length 4
-      Name string 4
-      dmArray     1
-      Value       [1,2,3]
-    dmEndPair     1
-  dmEndObject     1
-  }
+  dmStartObject    1
+    dmStartPair    1
+      Name length  4
+      Name string  4
+      dmStartArray 1
+        dmByte     1
+        1          1
+        dmByte     1
+        2          1
+        dmByte     1
+        3          1
+      dmEndArray   1
+    dmEndPair      1
+  dmEndObject      1
+  } // 20 bytes
+  Obj := DSON.Builder
+         .StartObject
+           .AddPropertyName('prop')
+           .StartArray
+             .AddValue(Byte(1))
+             .AddValue(Byte(2))
+             .AddValue(Byte(3))
+           .EndArray
+         .EndObject
+         .DSONObject;
+
+  Bytes := DSON.BinaryWriter.WriteObject(Obj);
+  Assert.AreEqual(20,Length(Bytes));
+
+  Assert.AreEqual(dmStartObject, TDSONMarker(Bytes[0]));
+  Assert.AreEqual(dmStartPair, TDSONMarker(Bytes[1]));
+  Assert.AreEqual(dmStartArray,TDSONMarker(Bytes[10]));
+  Assert.AreEqual(dmByte,TDSONMarker(Bytes[11]));
+  Assert.AreEqual(Byte(1),Bytes[12]);
+  Assert.AreEqual(dmByte,TDSONMarker(Bytes[13]));
+  Assert.AreEqual(Byte(2),Bytes[14]);
+  Assert.AreEqual(dmByte,TDSONMarker(Bytes[15]));
+  Assert.AreEqual(Byte(3),Bytes[16]);
+  Assert.AreEqual(dmEndArray, TDSONMarker(Bytes[17]));
+  Assert.AreEqual(dmEndPair, TDSONMarker(Bytes[18]));
+  Assert.AreEqual(dmEndObject, TDSONMarker(Bytes[19]));
 end;
 
 procedure BinaryWriterTests.WritesNumerics;
