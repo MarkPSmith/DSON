@@ -8,7 +8,6 @@ interface
 
 uses
   System.Rtti,
-  System.Json,
   System.Generics.Defaults,
   System.SysUtils,
   System.Classes,
@@ -399,8 +398,7 @@ function Reader: IDSONReader;
 implementation
 
 uses
-  System.DateUtils,
-  System.Variants;
+  System.DateUtils;
 
 function Reader: IDSONReader;
 begin
