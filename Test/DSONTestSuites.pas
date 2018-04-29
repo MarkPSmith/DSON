@@ -37,6 +37,8 @@ type
     public
       [Setup]
       procedure Setup;
+      [Test]
+      procedure ReadsDSON;
   end;
 
   [TestFixture]
@@ -72,7 +74,7 @@ implementation
 uses
   System.SysUtils,
   System.Rtti,
-  System.DateUtils;
+  System.DateUtils, System.Classes;
 
 {BuilderTests}
 
@@ -304,6 +306,155 @@ begin
 end;
 
 { ReaderTests }
+
+procedure ReaderTests.ReadsDSON;
+var
+  BS: TBytesStream;
+  Obj: IDSONObject;
+
+  procedure CheckSimplePair(const APair: IDSONPair; const AKind: TDSONKind; const AName, AValue: string);
+  begin
+    Assert.AreEqual(AName,APair.Name);
+    Assert.AreEqual(AKind,APair.Value.Kind);
+    Assert.AreEqual(AValue,(APair.Value as IDSONSimple).Value.ToString);
+  end;
+
+begin
+  BS := TBytesStream.Create;
+  try
+    DSON.BinaryWriter.WriteObjectToStream(FDSONObject,BS);
+    BS.Position := 0;
+    Assert.WillNotRaiseAny(
+      procedure begin
+        Obj := DSON.Reader.ReadObject(BS);
+      end
+    );
+    CheckSimplePair(Obj.Pairs[0],dkGUID,'dkGUID','{11111111-2222-3333-4444-555555555555}');
+    CheckSimplePair(Obj.Pairs[1],dkByte,'dkByte','65');
+    CheckSimplePair(Obj.Pairs[2],dkInt16,'dkInt16','16');
+    CheckSimplePair(Obj.Pairs[3],dkInt32,'dkInt32','32');
+    CheckSimplePair(Obj.Pairs[4],dkInt64,'dkInt64','64');
+    CheckSimplePair(Obj.Pairs[5],dkString,'dkString','The quick brown fox jumped over the lazy dogs');
+
+    // Single doesn't have enough precision to come out cleanly as a string. Testing individually
+    // instead of in CheckSimplePair()
+    Assert.AreEqual('dkSingle',Obj.Pairs[6].Name);
+    Assert.AreEqual(dkSingle,Obj.Pairs[6].Value.Kind);
+    Assert.AreEqual(Single(1.1),(Obj.Pairs[6].Value as IDSONSimple).Value.AsType<Single>,0.01);
+
+    CheckSimplePair(Obj.Pairs[7],dkDouble,'dkDouble','2.2');
+    CheckSimplePair(Obj.Pairs[8],dkExtended,'dkExtended','3.3');
+    CheckSimplePair(Obj.Pairs[9],dkChar,'dkChar','Z');
+    CheckSimplePair(Obj.Pairs[10],dkTrue,'dkTrue','True');
+    CheckSimplePair(Obj.Pairs[11],dkFalse,'dkFalse','False');
+    CheckSimplePair(Obj.Pairs[12],dkDateTime,'dkDateTime',DateTimeToUnix(FDateTime).ToString);
+    CheckSimplePair(Obj.Pairs[13],dkNil,'dkNil','(empty)');
+
+    // Array of integer
+    Assert.IsTrue(Supports(FDSONObject.Pairs[14].Value, IDSONArray));
+    with FDSONObject.Pairs[14].Value as IDSONArray do
+      begin
+        Assert.AreEqual(5, Length(Values));
+        Assert.AreEqual(1, (Values[0] as IDSONSimple).Value.AsInteger);
+        Assert.AreEqual(2, (Values[1] as IDSONSimple).Value.AsInteger);
+        Assert.AreEqual(3, (Values[2] as IDSONSimple).Value.AsInteger);
+        Assert.AreEqual(4, (Values[3] as IDSONSimple).Value.AsInteger);
+        Assert.AreEqual(5, (Values[4] as IDSONSimple).Value.AsInteger);
+      end;
+
+    // Array of array
+    with FDSONObject.Pairs[15].Value as IDSONArray do
+      begin
+        Assert.AreEqual(2, Length(Values));
+        Assert.IsTrue(Supports(Values[0], IDSONArray));
+        Assert.IsTrue(Supports(Values[1], IDSONArray));
+      end;
+
+    with (FDSONObject.Pairs[15].Value as IDSONArray).Values[0] as IDSONArray do
+      begin
+        Assert.AreEqual(5, Length(Values));
+        Assert.AreEqual(1, (Values[0] as IDSONSimple).Value.AsInteger);
+        Assert.AreEqual(2, (Values[1] as IDSONSimple).Value.AsInteger);
+        Assert.AreEqual(3, (Values[2] as IDSONSimple).Value.AsInteger);
+        Assert.AreEqual(4, (Values[3] as IDSONSimple).Value.AsInteger);
+        Assert.AreEqual(5, (Values[4] as IDSONSimple).Value.AsInteger);
+      end;
+
+    with (FDSONObject.Pairs[15].Value as IDSONArray).Values[1] as IDSONArray do
+      begin
+        Assert.AreEqual(3, Length(Values));
+        Assert.AreEqual('red', (Values[0] as IDSONSimple).Value.AsString);
+        Assert.AreEqual('green', (Values[1] as IDSONSimple).Value.AsString);
+        Assert.AreEqual('blue', (Values[2] as IDSONSimple).Value.AsString);
+      end;
+
+    // Array of object
+    with FDSONObject.Pairs[16].Value as IDSONArray do
+      begin
+        Assert.AreEqual(2, Length(Values));
+        Assert.IsTrue(Supports(Values[0], IDSONObject));
+        Assert.IsTrue(Supports(Values[1], IDSONObject));
+      end;
+
+    with (FDSONObject.Pairs[16].Value as IDSONArray).Values[0] as IDSONObject do
+      begin
+        Assert.AreEqual('name', Pairs[0].Name);
+        Assert.AreEqual('John Doe', (Pairs[0].Value as IDSONSimple).Value.ToString);
+        Assert.AreEqual('age', Pairs[1].Name);
+        Assert.AreEqual(34, (Pairs[1].Value as IDSONSimple).Value.AsInteger);
+      end;
+
+    with (FDSONObject.Pairs[16].Value as IDSONArray).Values[1] as IDSONObject do
+      begin
+        Assert.AreEqual('name', Pairs[0].Name);
+        Assert.AreEqual('Jane Doe', (Pairs[0].Value as IDSONSimple).Value.ToString);
+        Assert.AreEqual('age', Pairs[1].Name);
+        Assert.AreEqual(32, (Pairs[1].Value as IDSONSimple).Value.AsInteger);
+      end;
+
+    // Array of array of array
+    with FDSONObject.Pairs[18].Value as IDSONArray do
+      begin
+        Assert.AreEqual(2, Length(Values));
+      end;
+
+    with (FDSONObject.Pairs[18].Value as IDSONArray).Values[0] as IDSONArray do
+      begin
+        Assert.AreEqual(2, Length(Values));
+        with Values[0] as IDSONArray do
+          begin
+            Assert.AreEqual(2, Length(Values));
+            Assert.AreEqual(1, (Values[0] as IDSONSimple).Value.AsInteger);
+            Assert.AreEqual(2, (Values[1] as IDSONSimple).Value.AsInteger);
+          end;
+        with Values[1] as IDSONArray do
+          begin
+            Assert.AreEqual(2, Length(Values));
+            Assert.AreEqual(3, (Values[0] as IDSONSimple).Value.AsInteger);
+            Assert.AreEqual(4, (Values[1] as IDSONSimple).Value.AsInteger);
+          end;
+      end;
+
+    with (FDSONObject.Pairs[18].Value as IDSONArray).Values[1] as IDSONArray do
+      begin
+        Assert.AreEqual(2, Length(Values));
+        with Values[0] as IDSONArray do
+          begin
+            Assert.AreEqual(2, Length(Values));
+            Assert.AreEqual(5, (Values[0] as IDSONSimple).Value.AsInteger);
+            Assert.AreEqual(6, (Values[1] as IDSONSimple).Value.AsInteger);
+          end;
+        with Values[1] as IDSONArray do
+          begin
+            Assert.AreEqual(2, Length(Values));
+            Assert.AreEqual(7, (Values[0] as IDSONSimple).Value.AsInteger);
+            Assert.AreEqual(8, (Values[1] as IDSONSimple).Value.AsInteger);
+          end;
+      end;
+  finally
+    BS.Free;
+  end;
+end;
 
 procedure ReaderTests.Setup;
 begin
