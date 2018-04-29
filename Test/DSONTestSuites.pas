@@ -50,6 +50,14 @@ type
       procedure WritesStrings;
       [Test]
       procedure WritesArrays;
+      [Test]
+      procedure WritesNil;
+      [Test]
+      procedure WritesBooleans;
+      [Test]
+      procedure WritesDates;
+      [Test]
+      procedure WritesGUIDs;
   end;
 
   [TestFixture]
@@ -358,6 +366,120 @@ begin
   Assert.AreEqual(dmEndArray, TDSONMarker(Bytes[17]));
   Assert.AreEqual(dmEndPair, TDSONMarker(Bytes[18]));
   Assert.AreEqual(dmEndObject, TDSONMarker(Bytes[19]));
+end;
+
+procedure BinaryWriterTests.WritesBooleans;
+var
+  Bytes: TBytes;
+  Obj: IDSONObject;
+begin
+  {
+  dmStartObject   1
+    dmStartPair   1
+      Name length 4
+      Name string 4
+      dmTrue      1
+      Value       [Empty for Booleans]
+    dmEndPair     1
+    dmStartPair   1
+      Name length 4
+      Name string 5
+      dmFalse     1
+      Value       [Empty for Booleans]
+    dmEndPair     1
+  dmEndObject     1
+  } // 25 bytes
+
+  Obj := DSON.Builder
+         .StartObject
+         .AddPropertyName('prop')
+         .AddValue(True)
+         .AddPropertyName('prop2')
+         .AddValue(False)
+         .EndObject.DSONObject;
+  Bytes := DSON.BinaryWriter.WriteObject(Obj);
+  Assert.AreEqual(25,Length(Bytes));
+
+  Assert.AreEqual(dmTrue,TDSONMarker(Bytes[10]));
+  Assert.AreEqual(dmFalse,TDSONMarker(Bytes[22]));
+end;
+
+procedure BinaryWriterTests.WritesDates;
+var
+  Bytes: TBytes;
+  Obj: IDSONObject;
+begin
+  {
+  dmStartObject   1
+    dmStartPair   1
+      Name length 4
+      Name string 4
+      dmDateTime  1
+      Value       8 byte integer (Unix date)
+    dmEndPair     1
+  dmEndObject     1
+  } // 21 bytes
+
+  Obj := DSON.Builder
+         .StartObject
+         .AddPropertyName('prop')
+         .AddValue(Now())
+         .EndObject.DSONObject;
+  Bytes := DSON.BinaryWriter.WriteObject(Obj);
+  Assert.AreEqual(21,Length(Bytes));
+end;
+
+procedure BinaryWriterTests.WritesGUIDs;
+var
+  Bytes: TBytes;
+  Obj: IDSONObject;
+begin
+  {
+  dmStartObject   1
+    dmStartPair   1
+      Name length 4
+      Name string 4
+      dmDateTime  1
+      Value       16 byte GUID
+    dmEndPair     1
+  dmEndObject     1
+  } // 29 bytes
+  Obj := DSON.Builder
+         .StartObject
+         .AddPropertyName('prop')
+         .AddValue(TGUID.NewGuid)
+         .EndObject.DSONObject;
+  Bytes := DSON.BinaryWriter.WriteObject(Obj);
+  Assert.AreEqual(29,Length(Bytes));
+
+  Assert.AreEqual(dmGUID,TDSONMarker(Bytes[10]));
+end;
+
+procedure BinaryWriterTests.WritesNil;
+var
+  Bytes: TBytes;
+  Obj: IDSONObject;
+begin
+  {
+  dmStartObject   1
+    dmStartPair   1
+      Name length 4
+      Name string 4
+      dmNil       1
+      Value       [Empty for Nil]
+    dmEndPair     1
+  dmEndObject     1
+  } // 13 bytes
+
+  Obj := DSON.Builder
+         .StartObject
+         .AddPropertyName('prop')
+         .AddNilValue
+         .EndObject.DSONObject;
+  Bytes := DSON.BinaryWriter.WriteObject(Obj);
+  Assert.AreEqual(13,Length(Bytes));
+
+  Assert.AreEqual(dmNil,TDSONMarker(Bytes[10]));
 end;
 
 procedure BinaryWriterTests.WritesNumerics;
