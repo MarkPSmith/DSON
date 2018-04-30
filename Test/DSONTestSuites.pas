@@ -67,6 +67,20 @@ type
     public
       [Setup]
       procedure Setup;
+      [Test]
+      procedure WritesArrays;
+      [Test]
+      procedure WritesBooleans;
+      [Test]
+      procedure WritesDates;
+      [Test]
+      procedure WritesGUIDs;
+      [Test]
+      procedure WritesNil;
+      [Test]
+      procedure WritesNumerics;
+      [Test]
+      procedure WritesStrings;
   end;
 
 implementation
@@ -731,6 +745,53 @@ procedure JSONWriterTests.Setup;
 begin
   FDateTime := Now;
   BuildDSONObject;
+end;
+
+procedure JSONWriterTests.WritesArrays;
+begin
+
+end;
+
+procedure JSONWriterTests.WritesBooleans;
+var
+  ActualJSON: string;
+  ExpectedJSON: string;
+  Obj: IDSONObject;
+begin
+  ExpectedJSON :=
+    '{"prop":true}';
+  Obj := DSON.Builder.StartObject.AddPropertyName('prop').AddValue(True).EndObject.DSONObject;
+  ActualJSON := DSON.JSONWriter.WriteObject(Obj);
+  Assert.AreEqual(ExpectedJSON, ActualJSON);
+end;
+
+procedure JSONWriterTests.WritesDates;
+var
+  ActualJSON: string;
+  ExpectedJSON: string;
+  Obj: IDSONObject;
+begin
+  ExpectedJSON :=
+    '{"prop":"' + DateToISO8601(FDateTime,False) + '"}';
+  Obj := DSON.Builder.StartObject.AddPropertyName('prop').AddValue(FDateTime).EndObject.DSONObject;
+  ActualJSON := DSON.JSONWriter.WriteObject(Obj);
+  Assert.AreEqual(ExpectedJSON, ActualJSON);
+end;
+
+procedure JSONWriterTests.WritesGUIDs;
+begin
+end;
+
+procedure JSONWriterTests.WritesNil;
+begin
+end;
+
+procedure JSONWriterTests.WritesNumerics;
+begin
+end;
+
+procedure JSONWriterTests.WritesStrings;
+begin
 end;
 
 initialization

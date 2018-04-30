@@ -1080,6 +1080,8 @@ end;
 
 function TDSONBuilder.GetDSONOBject: IDSONObject;
 begin
+  if FDSONObject = nil then
+    raise Exception.Create('DSON Object not finished being built.');
   Result := FDsonObject;
 end;
 
@@ -1140,7 +1142,7 @@ begin
   for ArrayValue in Value.Values do
     begin
       WriteValue(ArrayValue);
-      WriteString(', ');
+      WriteString(',');
     end;
   if FStream.Position > StreamPosition then
     begin
@@ -1159,7 +1161,7 @@ procedure TDSONJSONWriter.InternalWriteDateTime(const Value: IDSONSimple);
 var
   DateString: string;
 begin
-  DateString := DateToISO8601(UnixToDateTime(Value.Value.AsType<Int64>));
+  DateString := DateToISO8601(UnixToDateTime(Value.Value.AsType<Int64>),False);
   WriteString(DoubleQuoted(DateString));
 end;
 
@@ -1178,7 +1180,7 @@ end;
 
 procedure TDSONJSONWriter.InternalWriteName(const AName: string);
 begin
-  WriteString(DoubleQuoted(AName) + ': ');
+  WriteString(DoubleQuoted(AName) + ':');
 end;
 
 procedure TDSONJSONWriter.InternalWriteObject(const ADsonObject: IDSONObject);
