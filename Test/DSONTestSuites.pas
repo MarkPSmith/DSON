@@ -280,7 +280,7 @@ begin
   Assert.AreEqual('Z', (FDSONObject.Pairs[9].Value as IDSONSimple).Value.ToString);
   Assert.AreEqual(True, (FDSONObject.Pairs[10].Value as IDSONSimple).Value.AsBoolean);
   Assert.AreEqual(False, (FDSONObject.Pairs[11].Value as IDSONSimple).Value.AsBoolean);
-  Assert.AreEqual(DateTimeToUnix(FDateTime), (FDSONObject.Pairs[12].Value as IDSONSimple).Value.AsInt64);
+  Assert.AreEqual(FDateTime, (FDSONObject.Pairs[12].Value as IDSONSimple).Value.AsType<TDateTime>);
   Assert.IsTrue((FDSONObject.Pairs[13].Value as IDSONSimple).Value.IsEmpty);
 end;
 
@@ -361,7 +361,7 @@ begin
     CheckSimplePair(Obj.Pairs[9],dkChar,'dkChar','Z');
     CheckSimplePair(Obj.Pairs[10],dkTrue,'dkTrue','True');
     CheckSimplePair(Obj.Pairs[11],dkFalse,'dkFalse','False');
-    CheckSimplePair(Obj.Pairs[12],dkDateTime,'dkDateTime',DateTimeToUnix(FDateTime).ToString);
+    CheckSimplePair(Obj.Pairs[12],dkDateTime,'dkDateTime',TValue.From(FDateTime).ToString);
     CheckSimplePair(Obj.Pairs[13],dkNil,'dkNil','(empty)');
 
     // Array of integer
@@ -748,8 +748,47 @@ begin
 end;
 
 procedure JSONWriterTests.WritesArrays;
+var
+  ActualJSON: string;
+  ExpectedJSON: string;
+  Obj: IDSONObject;
 begin
+  // Simple Array
+  ExpectedJSON :=
+    '{"prop":[1,2,3]}';
+  Obj := DSON.Builder
+         .StartObject
+           .AddPropertyName('prop')
+           .StartArray
+             .AddValue(1)
+             .AddValue(2)
+             .AddValue(3)
+           .EndArray
+         .EndObject.DSONObject;
+  ActualJSON := DSON.JSONWriter.WriteObject(Obj);
+  Assert.AreEqual(ExpectedJSON, ActualJSON);
 
+  // Array of arrays
+  ExpectedJSON :=
+    '{"prop":[[1,2,3],[4,5,6]]}';
+  Obj := DSON.Builder
+         .StartObject
+           .AddPropertyName('prop')
+           .StartArray
+             .StartArray
+               .AddValue(1)
+               .AddValue(2)
+               .AddValue(3)
+             .EndArray
+             .StartArray
+               .AddValue(4)
+               .AddValue(5)
+               .AddValue(6)
+             .EndArray
+           .EndArray
+         .EndObject.DSONObject;
+  ActualJSON := DSON.JSONWriter.WriteObject(Obj);
+  Assert.AreEqual(ExpectedJSON, ActualJSON);
 end;
 
 procedure JSONWriterTests.WritesBooleans;
@@ -779,19 +818,98 @@ begin
 end;
 
 procedure JSONWriterTests.WritesGUIDs;
+var
+  ActualJSON: string;
+  ExpectedJSON: string;
+  Obj: IDSONObject;
 begin
+  ExpectedJSON :=
+    '{"prop":"{11111111-2222-3333-4444-555555555555}"}';
+  Obj := DSON.Builder.StartObject.AddPropertyName('prop').AddValue(TGUID.Create('{11111111-2222-3333-4444-555555555555}')).EndObject.DSONObject;
+  ActualJSON := DSON.JSONWriter.WriteObject(Obj);
+  Assert.AreEqual(ExpectedJSON, ActualJSON);
 end;
 
 procedure JSONWriterTests.WritesNil;
+var
+  ActualJSON: string;
+  ExpectedJSON: string;
+  Obj: IDSONObject;
 begin
+  ExpectedJSON :=
+    '{"prop":null}';
+  Obj := DSON.Builder.StartObject.AddPropertyName('prop').AddNilValue.EndObject.DSONObject;
+  ActualJSON := DSON.JSONWriter.WriteObject(Obj);
+  Assert.AreEqual(ExpectedJSON, ActualJSON);
 end;
 
 procedure JSONWriterTests.WritesNumerics;
+var
+  ActualJSON: string;
+  ExpectedJSON: string;
+  Obj: IDSONObject;
 begin
+  // Byte
+  ExpectedJSON :=
+    '{"prop":65}';
+  Obj := DSON.Builder.StartObject.AddPropertyName('prop').AddValue(Byte(65)).EndObject.DSONObject;
+  ActualJSON := DSON.JSONWriter.WriteObject(Obj);
+  Assert.AreEqual(ExpectedJSON, ActualJSON);
+
+  // Int16
+  ExpectedJSON :=
+    '{"prop":16}';
+  Obj := DSON.Builder.StartObject.AddPropertyName('prop').AddValue(Int16(16)).EndObject.DSONObject;
+  ActualJSON := DSON.JSONWriter.WriteObject(Obj);
+  Assert.AreEqual(ExpectedJSON, ActualJSON);
+
+  // Int32
+  ExpectedJSON :=
+    '{"prop":32}';
+  Obj := DSON.Builder.StartObject.AddPropertyName('prop').AddValue(Int32(32)).EndObject.DSONObject;
+  ActualJSON := DSON.JSONWriter.WriteObject(Obj);
+  Assert.AreEqual(ExpectedJSON, ActualJSON);
+
+  // Int64
+  ExpectedJSON :=
+    '{"prop":64}';
+  Obj := DSON.Builder.StartObject.AddPropertyName('prop').AddValue(Int64(64)).EndObject.DSONObject;
+  ActualJSON := DSON.JSONWriter.WriteObject(Obj);
+  Assert.AreEqual(ExpectedJSON, ActualJSON);
+
+  // Single
+  ExpectedJSON :=
+    '{"prop":1.10000002384186}'; // Single type has terrible precision
+  Obj := DSON.Builder.StartObject.AddPropertyName('prop').AddValue(Single(1.1)).EndObject.DSONObject;
+  ActualJSON := DSON.JSONWriter.WriteObject(Obj);
+  Assert.AreEqual(ExpectedJSON, ActualJSON);
+
+  // Double
+  ExpectedJSON :=
+    '{"prop":2.2}'; // Single type has terrible precision
+  Obj := DSON.Builder.StartObject.AddPropertyName('prop').AddValue(Double(2.2)).EndObject.DSONObject;
+  ActualJSON := DSON.JSONWriter.WriteObject(Obj);
+  Assert.AreEqual(ExpectedJSON, ActualJSON);
+
+  // Extended
+  ExpectedJSON :=
+    '{"prop":3.3}';
+  Obj := DSON.Builder.StartObject.AddPropertyName('prop').AddValue(Extended(3.3)).EndObject.DSONObject;
+  ActualJSON := DSON.JSONWriter.WriteObject(Obj);
+  Assert.AreEqual(ExpectedJSON, ActualJSON);
 end;
 
 procedure JSONWriterTests.WritesStrings;
+var
+  ActualJSON: string;
+  ExpectedJSON: string;
+  Obj: IDSONObject;
 begin
+  ExpectedJSON :=
+    '{"prop":"The quick brown fox jumped over the lazy dogs"}';
+  Obj := DSON.Builder.StartObject.AddPropertyName('prop').AddValue('The quick brown fox jumped over the lazy dogs').EndObject.DSONObject;
+  ActualJSON := DSON.JSONWriter.WriteObject(Obj);
+  Assert.AreEqual(ExpectedJSON, ActualJSON);
 end;
 
 initialization

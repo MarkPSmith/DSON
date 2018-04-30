@@ -500,10 +500,10 @@ end;
 
 procedure TDSONBinaryWriter.InternalWriteDateTime(const Value: IDSONSimple);
 var
-  UnixDate: Int64;
+  DateTime: TDateTime;
 begin
-  UnixDate := Value.Value.AsInt64;
-  FStream.Write(UnixDate, Sizeof(Int64));
+  DateTime := Value.Value.AsType<TDateTime>;
+  FStream.Write(DateTime, Sizeof(DateTime));
 end;
 
 procedure TDSONBinaryWriter.InternalWriteGuidValue(const Value: IDSONSimple);
@@ -699,8 +699,7 @@ end;
 constructor TDSONSimple.Create(const AValue: TDateTime);
 begin
   FKind := dkDateTime;
-  {internal storage format is unix time}
-  FValue := TValue.From(DateTimeToUnix(AValue));
+  FValue := TValue.From(AValue);
 end;
 
 constructor TDSONSimple.Create(const AValue: TGUID);
@@ -1147,7 +1146,7 @@ begin
   if FStream.Position > StreamPosition then
     begin
       // Strip off the last comma
-      FStream.Position := FStream.Position - 2;
+      FStream.Position := FStream.Position - 1;
     end;
   WriteMarker(dmEndArray);
 end;
@@ -1161,7 +1160,7 @@ procedure TDSONJSONWriter.InternalWriteDateTime(const Value: IDSONSimple);
 var
   DateString: string;
 begin
-  DateString := DateToISO8601(UnixToDateTime(Value.Value.AsType<Int64>),False);
+  DateString := DateToISO8601(Value.Value.AsType<TDateTime>,False);
   WriteString(DoubleQuoted(DateString));
 end;
 
@@ -1414,13 +1413,11 @@ end;
 
 function TDSONReader.ReadDateTime: IDSONValue;
 var
-  Date: TDateTime;
-  UnixDate: Int64;
+  DateTime: TDateTime;
 begin
   // Date time is stored as a UNIX 64 bit value.
-  FStream.Read(UnixDate,Sizeof(Int64));
-  Date := UnixToDateTime(UnixDate);
-  Result := TDSONSimple.Create(Date);
+  FStream.Read(DateTime,Sizeof(DateTime));
+  Result := TDSONSimple.Create(DateTime);
 end;
 
 function TDSONReader.ReadExtended: IDSONValue;
