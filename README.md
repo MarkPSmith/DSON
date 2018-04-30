@@ -78,17 +78,24 @@ Use this to write your DSON objects to a stream.
 ```
 var
   Obj: IDSONObject;
+  Stream: TMemoryStream;
+  Bytes: TBytes;
 begin
-  Obj :=
-    DSON.Builder
-      .StartObject
-        .AddPropertyName('foo')
-        .AddValue('bar')
-      .EndObject.DSONObject;
-  // Write to a stream
-  DSON.BinaryWriter.WriteObjectToStream(Obj,Stream);
-  // Write to TBytes
-  DSON.BinaryWriter.WriteObject(Obj); // Returns TBytes
+  Stream := TMemoryStream.Create;
+  try
+    Obj :=
+      DSON.Builder
+        .StartObject
+          .AddPropertyName('foo')
+          .AddValue('bar')
+        .EndObject.DSONObject;
+    // Write to a stream
+    DSON.BinaryWriter.WriteObjectToStream(Obj,Stream);
+    // Write to TBytes
+    Bytes := DSON.BinaryWriter.WriteObject(Obj);
+  finally
+    Stream.Free;
+  end;
 end;
 ```
 
@@ -99,6 +106,7 @@ This will generate a JSON string from your object.
 ```
 var
   Obj: IDSONObject;
+  Str: String;
 begin
   Obj :=
     DSON.Builder
@@ -107,10 +115,36 @@ begin
         .AddValue('bar')
       .EndObject.DSONObject;
   // Write to a JSON string
-  DSON.JSONWriter.WriteObject(Obj); // Returns a JSON string
+  Str := DSON.JSONWriter.WriteObject(Obj);
 end;
 ```
 
 Again, this will be lossy as you will lose the precision of Delphi native types.
 
 ## DSON Reader
+Reads a DSON object back in from a stream.
+
+**Example:**
+```
+var
+  Obj1, Obj2: IDSONObject;
+  Stream: TMemoryStream;
+begin
+  Stream := TMemoryStream.Create;
+  try
+    Obj :=
+      DSON.Builder
+        .StartObject
+          .AddPropertyName('foo')
+          .AddValue('bar')
+        .EndObject.DSONObject;
+    // Write to a stream
+    DSON.BinaryWriter.WriteObjectToStream(Obj,Stream);
+    // Read it back in
+    Stream.Position := 0;
+    Obj2 := DSON.Reader.ReadObject(Stream);
+  finally
+    Stream.Free;
+  end;
+end;
+```
