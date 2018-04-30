@@ -27,7 +27,7 @@ DSON.JSONWriter: returns an IDSONJSONWriter instance
 Use this to build your DSON objects. After the final call to EndObject you can retrieve the built object through the DSONObject property.
 
 **Fluent Example:**
-```
+```delphi
 var
   Obj: IDSONObject;
 begin
@@ -52,7 +52,7 @@ end;
 ```
 
 **Non-fluent Example:**
-```
+```delphi
 // The utility function always returns a new builder, so you want to
 // keep a local reference.
 var
@@ -75,7 +75,7 @@ Of course, everything is interfaces so there is no need to free your local build
 Use this to write your DSON objects to a stream.
 
 **Example:**
-```
+```delphi
 var
   Obj: IDSONObject;
   Stream: TMemoryStream;
@@ -103,7 +103,7 @@ end;
 This will generate a JSON string from your object.
 
 **Example:**
-```
+```delphi
 var
   Obj: IDSONObject;
   Str: String;
@@ -125,7 +125,7 @@ Again, this will be lossy as you will lose the precision of Delphi native types.
 Reads a DSON object back in from a stream.
 
 **Example:**
-```
+```delphi
 var
   Obj1, Obj2: IDSONObject;
   Stream: TMemoryStream;
